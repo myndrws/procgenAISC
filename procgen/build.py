@@ -54,24 +54,21 @@ def _attempt_configure(build_type, package):
         cmake_prefix_paths = [os.environ["PROCGEN_CMAKE_PREFIX_PATH"]]
     else:
         # guess some common qt cmake paths, it's unclear why cmake can't find qt without this
-        cmake_prefix_paths = ["/usr/local/opt/qt5/lib/cmake"]
+        cmake_prefix_paths = ["C:/Users/amy_c/miniconda3/Library/lib/cmake"]
         conda_exe = shutil.which("conda")
+        print(str(conda_exe))
         if conda_exe is not None:
-            conda_info = json.loads(
-                sp.run(["conda", "info", "--json"], stdout=sp.PIPE).stdout
-            )
-            conda_prefix = conda_info["active_prefix"]
-            if conda_prefix is None:
-                conda_prefix = conda_info["conda_prefix"]
+            conda_prefix = "C:/Users/amy_c/miniconda3/envs/procgen"
             if platform.system() == "Windows":
-                conda_prefix = os.path.join(conda_prefix, "library")
+                conda_prefix = os.path.join(conda_prefix, "Library")
             conda_cmake_path = os.path.join(conda_prefix, "lib", "cmake", "Qt5")
             # prepend this qt since it's likely to be loaded already by the python process
             cmake_prefix_paths.insert(0, conda_cmake_path)
+            # C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\IDE
 
     generator = "Unix Makefiles"
     if platform.system() == "Windows":
-        generator = "Visual Studio 15 2017 Win64"
+        generator = "Visual Studio 16 2019"
     configure_cmd = [
         "cmake",
         "-G",

@@ -49,6 +49,7 @@ add_library(env
   src/game-registry.cpp
   src/games/dodgeball.cpp
   src/games/bigfish.cpp
+  src/games/treechop.cpp
   src/games/bossfight.cpp
   src/games/caveflyer.cpp
   src/games/climber.cpp

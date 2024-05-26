@@ -8,6 +8,7 @@ std::vector<std::shared_ptr<QImage>> topdown_simple_backgrounds;
 std::vector<std::shared_ptr<QImage>> platform_backgrounds;
 std::vector<std::shared_ptr<QImage>> space_backgrounds;
 std::vector<std::shared_ptr<QImage>> water_backgrounds;
+std::vector<std::shared_ptr<QImage>> forest_background;
 std::vector<std::shared_ptr<QImage>> water_surface_backgrounds;
 
 std::map<std::string, std::shared_ptr<QImage>> sprites;
@@ -714,6 +715,9 @@ void images_load() {
         "misc_assets/lockRed2.png",
         "misc_assets/car_yellow_5.png",
         "misc_assets/explosion5.png",
+        "misc_assets/tree.png",
+        "misc_assets/tree_stump.png",
+        "misc_assets/tree_chopper.png",
         "platformer/playerBlue_dead.png",
         "platformer/playerBlue_roll.png",
         "platformer/playerRed_walk4.png",
@@ -813,6 +817,7 @@ void images_load() {
         "platformer/playerRed_switch2.png",
         "platformer/playerRed_swim1.png",
         "platformer/playerGrey_duck.png",
+
     };
 
     for (const auto& sprite_path : sprite_paths) {
@@ -825,6 +830,7 @@ void images_load() {
         {"topdown_backgrounds", &topdown_backgrounds},
         {"topdown_simple_backgrounds", &topdown_simple_backgrounds},
         {"water_backgrounds", &water_backgrounds},
+        {"forest_background", &forest_background},
         {"water_surface_backgrounds", &water_surface_backgrounds},
     };
 
@@ -931,6 +937,12 @@ void images_load() {
                 "water_backgrounds/underwater1.png",
                 "water_backgrounds/underwater2.png",
                 "water_backgrounds/underwater3.png",
+            },
+        },
+        {
+            "forest_background",
+            {
+                "forest_background/forest_floor.png"
             },
         },
         {
