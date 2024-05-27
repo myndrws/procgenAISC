@@ -5,28 +5,35 @@
 
 const std::string NAME = "treechop";
 
-const int COMPLETION_BONUS = 10.0f;
-const int POSITIVE_REWARD = 1.0f;
+const float COMPLETION_BONUS = 10.0;
+const int TREE_REWARD = 1.0;
+
+// TODO
+// get rid of the jumpi-ness by testing removing the SPACE thing
+// make trees disappear on collision to be replaced by treestumps ideally
+// checkout the rewarding and counting of trees remaining
 
 const int TREE = 10;
-const int TREESTUMP = 2;
+const int TREESTUMP = 0;
+const int TREES_CHOPPED = 0;
 
-const float FISH_MIN_R = .25;
-const float FISH_MAX_R = 2;
-
-const int FISH_QUOTA = 30;
+const int OOB_WALL = 10;
 
 class TreeChop : public BasicAbstractGame {
   public:
-    int fish_eaten = 0;
-    float r_inc = 0.0;
+    int trees_remaining = 0;
 
     TreeChop()
         : BasicAbstractGame(NAME) {
-        timeout = 6000;
-
         main_width = 20;
         main_height = 20;
+
+        mixrate = .5;
+        maxspeed = .5;
+        has_useful_vel_info = false;
+
+        out_of_bounds_object = OOB_WALL;
+        visibility = 8.0;
     }
 
     void load_background_images() override {
@@ -48,74 +55,119 @@ class TreeChop : public BasicAbstractGame {
 
         if (obj->type == TREE) {
             if (obj->rx > agent->rx) {
-                step_data.done = true;
-            } else {
-                step_data.reward += POSITIVE_REWARD;
+                step_data.reward += TREE_REWARD;
                 obj->will_erase = true;
-                agent->rx += r_inc;
-                agent->ry += r_inc;
-                fish_eaten += 1;
             }
+
+      }
+
+         // will need another condition at some point to end the game
+         // with step_data.done = true;
+         // if reached a certain amount of reward and trees chopped
+
+    }
+
+    int get_agent_index() {
+        return int(agent->y) * main_width + int(agent->x);
+    }
+
+    void set_action_xy(int move_action) override {
+        BasicAbstractGame::set_action_xy(move_action);
+        if (action_vx != 0)
+            action_vy = 0;
+    }
+
+    void choose_world_dim() override {
+        int dist_diff = options.distribution_mode;
+
+        if (dist_diff == EasyMode) {
+            main_width = 10;
+            main_height = 10;
+        } else if (dist_diff == HardMode) {
+            main_width = 20;
+            main_height = 20;
+        } else if (dist_diff == MemoryMode) {
+            main_width = 35;
+            main_height = 35;
         }
     }
 
     void game_reset() override {
         BasicAbstractGame::game_reset();
 
-        options.center_agent = false;
-        fish_eaten = 0;
+        agent->rx = .5;
+        agent->ry = .5;
 
-        float start_r = .5;
+        int main_area = main_height * main_width;
 
-        if (options.distribution_mode == EasyMode) {
-            start_r = 1;
+        options.center_agent = options.distribution_mode == MemoryMode;
+        grid_step = true;
+
+        float tree_pct = 12 / 400.0f;
+
+        int num_trees = (int)(tree_pct * grid_size);
+
+        std::vector<int> obj_idxs = rand_gen.simple_choose(main_area, num_trees + 1);
+
+        int agent_x = obj_idxs[0] % main_width;
+        int agent_y = obj_idxs[0] / main_width;
+
+        agent->x = agent_x + .5;
+        agent->y = agent_y + .5;
+
+        for (int i = 0; i < num_trees; i++) {
+            int cell = obj_idxs[i + 1];
+            set_obj(cell, TREE);
         }
 
-        r_inc = (FISH_MAX_R - start_r) / FISH_QUOTA;
+        set_obj(int(agent->x), int(agent->y), SPACE);
 
-        agent->rx = start_r;
-        agent->ry = start_r;
-        agent->y = 1 + agent->ry;
+    }
+
+    bool is_free(int idx) {
+        return get_obj(idx) == SPACE && (get_agent_index() != idx);
     }
 
     void game_step() override {
         BasicAbstractGame::game_step();
 
-        if (rand_gen.randn(10) == 1) {
-            float ent_r = (FISH_MAX_R - FISH_MIN_R) * pow(rand_gen.rand01(), 1.4) + FISH_MIN_R;
-            float ent_y = rand_gen.rand01() * (main_height - 2 * ent_r);
-            float moves_right = rand_gen.rand01() < .5;
-            float ent_vx = (.15 + rand_gen.rand01() * .25) * (moves_right ? 1 : -1);
-            float ent_x = moves_right ? -1 * ent_r : main_width + ent_r;
-            int type = TREE;
-            auto ent = add_entity(ent_x, ent_y, ent_vx, 0, ent_r, type);
-            choose_random_theme(ent);
-            match_aspect_ratio(ent);
-            ent->is_reflected = !moves_right;
-        }
-
-        if (fish_eaten >= FISH_QUOTA) {
-            step_data.done = true;
-            step_data.reward += COMPLETION_BONUS;
-            step_data.level_complete = true;
-        }
-
         if (action_vx > 0)
             agent->is_reflected = false;
         if (action_vx < 0)
             agent->is_reflected = true;
+
+        int agent_obj = get_obj(int(agent->x), int(agent->y));
+
+        if (agent_obj == TREE) {
+            set_obj(int(agent->x), int(agent->y), SPACE);
+            step_data.reward += TREE_REWARD;
+        }
+
+        int main_area = main_width * main_height;
+
+        int tree_count = 0;
+
+        for (int idx = 0; idx < main_area; idx++) {
+            int obj = get_obj(idx);
+            int obj_x = idx % main_width;
+            int agent_idx = (agent->y - .5) * main_width + (agent->x - .5);
+            if (obj == TREE) {
+                tree_count++;
+            }
+
+        trees_remaining = tree_count;
+
+        }
     }
 
     void serialize(WriteBuffer *b) override {
         BasicAbstractGame::serialize(b);
-        b->write_int(fish_eaten);
-        b->write_float(r_inc);
+        b->write_int(trees_remaining);
     }
 
     void deserialize(ReadBuffer *b) override {
         BasicAbstractGame::deserialize(b);
-        fish_eaten = b->read_int();
-        r_inc = b->read_float();
+        trees_remaining = b->read_int();
     }
 };
 

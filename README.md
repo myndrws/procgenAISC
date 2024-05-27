@@ -1,6 +1,15 @@
 # Goal Misgeneralization in Procgen
 
-This is a fork of the [procgen benchmark](https://github.com/openai/procgen) that implements modifications for the paper Goal Misgeneralization in Deep Reinforcement Learning.
+This is a fork of the modified [procgen benchmark](https://github.com/openai/procgen) repo that implements modifications for the paper [Goal Misgeneralization in Deep Reinforcement Learning](https://github.com/JacobPfau/procgenAISC/tree/master). The original repo was forked from [original repo](https://github.com/openai/procgen). 
+
+I am building on this repo to replicate the tree gridworld environment described in [this paper by Shah et al 2022](https://arxiv.org/abs/2210.01790).
+
+# Game mechanic description/steps
+
+When treechopper collides with a tree, the tree should turn into a tree stump and the treechopper should be rewarded with 1, then the treestump should be decorative and disappear after 10 seconds (this variant means the agent will also have to learn to not interact with treestumps).
+
+The trees should only appear at a given regrowth rate.
+They should appear randomly in the grid and not fly in from the side.
 
 ## Descriptions of the modified environments
 
