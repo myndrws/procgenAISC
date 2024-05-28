@@ -4,7 +4,7 @@ This is a fork of the modified [procgen benchmark](https://github.com/openai/pro
 
 I am building on this repo to replicate the tree gridworld environment described in [this paper by Shah et al 2022](https://arxiv.org/abs/2210.01790).
 
-# Treechop game mechanic 
+# TreeChop game mechanic 
 
 The treechopper chops down trees, and these respawn at a given rate, in a single never-ending procgen episode. I have built this environment based on the description by [Shah et al 2022](https://arxiv.org/abs/2210.01790):
 
