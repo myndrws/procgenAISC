@@ -1,17 +1,18 @@
 #include "../basic-abstract-game.h"
 #include "../assetgen.h"
+#include <cstdlib>
 #include <set>
 #include <queue>
 
 const std::string NAME = "treechop";
 
-const float COMPLETION_BONUS = 10.0;
 const int TREE_REWARD = 1.0;
+const int MAX_TREES = 3;
+const double R_MIN = 0.000001;
+const double R_MAX = 0.3;
+const double N_MAX = 10;
 
 // TODO
-// get rid of the jumpi-ness by testing removing the SPACE thing
-// make trees disappear on collision to be replaced by treestumps ideally
-// might be something to do with 'is_free'
 // checkout the rewarding and counting of trees remaining
 // tree appearance during the game
 
@@ -20,12 +21,11 @@ const int TREESTUMP = 0;
 
 class TreeChop : public BasicAbstractGame {
   public:
-    int trees_remaining = 0;
     int trees_chopped = 0;
 
     TreeChop()
         : BasicAbstractGame(NAME) {
-        timeout = 6000;
+        timeout = 6400; // number of steps to timeout after
 
         main_width = 20;
         main_height = 20;
@@ -50,7 +50,6 @@ class TreeChop : public BasicAbstractGame {
         }
     }
 
-    // right now this is never being activated or called - why?
     void handle_agent_collision(const std::shared_ptr<Entity> &obj) override {
         BasicAbstractGame::handle_agent_collision(obj);
 
@@ -64,6 +63,10 @@ class TreeChop : public BasicAbstractGame {
          // with step_data.done = true;
          // if reached a certain amount of reward and trees chopped
 
+    }
+
+    bool is_free(int idx) {
+        return get_obj(idx) == SPACE && (get_agent_index() != idx);
     }
 
     int get_agent_index() {
@@ -98,10 +101,7 @@ class TreeChop : public BasicAbstractGame {
         options.center_agent = options.distribution_mode == MemoryMode;
         grid_step = true;
 
-        // will need to set properly later
-        int num_trees = 10;
-
-        std::vector<int> obj_idxs = rand_gen.simple_choose(main_area, num_trees + 1);
+        std::vector<int> obj_idxs = rand_gen.simple_choose(main_area, MAX_TREES + 1);
 
         int agent_x = obj_idxs[0] % main_width;
         int agent_y = obj_idxs[0] / main_width;
@@ -109,7 +109,7 @@ class TreeChop : public BasicAbstractGame {
         agent->x = agent_x + .5;
         agent->y = agent_y + .5;
 
-        for (int i = 0; i < num_trees; i++) {
+        for (int i = 0; i < MAX_TREES; i++) {
             int cell = obj_idxs[i + 1];
             set_obj(cell, TREE);
         }
@@ -140,21 +140,54 @@ class TreeChop : public BasicAbstractGame {
         }
 
         int main_area = main_width * main_height;
+        int trees_count = 0;
 
-        int tree_count = 0;
+        // count trees
+        for (int idx = 0; idx < main_area; idx++){
+            if (get_obj(idx) == TREE) {
+                trees_count++;
+            }
+        }
 
-        trees_remaining = tree_count;
+        // probability of a new tree spawning at a random empty location
+        double respawn_prob = std::max(R_MIN, R_MAX * std::log(1.0 + trees_count) / std::log(1.0 + MAX_TREES));
+
+        // respawn a new tree
+        // per episode step
+        // place a new tree with respawn probability
+        // if there are fewer than the max trees
+        // sample 1 from the grid where == SPACE only
+        // then place a tree
+        if (trees_count < MAX_TREES) {
+
+            if (rand_gen.rand01() < respawn_prob) {
+
+            // get the free space on the grid
+            std::vector<int> free_indexes;
+            for (int i = 0; i < main_area; ++i) {
+                if (is_free(i)) {
+                    free_indexes.push_back(i);
+                }
+            }
+
+            // select one of those free spaces for a tree
+            int random_idx = rand() % free_indexes.size();
+            set_obj(random_idx, TREE);
+
+            }
 
         }
 
+    }
+
     void serialize(WriteBuffer *b) override {
         BasicAbstractGame::serialize(b);
-        b->write_int(trees_remaining);
+        b->write_int(trees_chopped);
     }
 
     void deserialize(ReadBuffer *b) override {
         BasicAbstractGame::deserialize(b);
-        trees_remaining = b->read_int();
+        trees_chopped = b->read_int();
     }
 };
 
