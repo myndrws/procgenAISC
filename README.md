@@ -1,6 +1,6 @@
 # TreeChop for Goal Misgeneralisation with Procgen
 
-This is a fork of the modified [procgen benchmark](https://github.com/openai/procgen) repo that implements modifications for the paper [Goal Misgeneralization in Deep Reinforcement Learning](https://github.com/JacobPfau/procgenAISC/tree/master). The original repo was forked from [original repo](https://github.com/openai/procgen). 
+This is a fork of the modified [procgen benchmark](https://github.com/openai/procgen) repo that implements modifications for the paper [Goal Misgeneralization in Deep Reinforcement Learning](https://github.com/JacobPfau/procgenAISC/tree/master). The original repo was forked from [OpenAI's procgen benchmark repo](https://github.com/openai/procgen). 
 
 I am building on this repo to replicate the tree gridworld environment described in [this paper by Shah et al 2022](https://arxiv.org/abs/2210.01790).
 
@@ -21,7 +21,7 @@ I have also currently included a 'recovery period' where the trees do not respaw
 
 ## Demo of the tree gridworld TreeChop
 
-
+https://github.com/myndrws/procgenAISC/assets/24572054/05c8c88d-bc78-4e8d-96d6-52d785493d81
 
 ----------------------------------------------
 
