@@ -7,7 +7,7 @@
 const std::string NAME = "treechop";
 
 const int TREE_REWARD = 1.0;
-const int MAX_TREES = 3;
+const int MAX_TREES = 10;
 const double R_MIN = 0.000001;
 const double R_MAX = 0.3;
 const double N_MAX = 10;
@@ -26,10 +26,8 @@ class TreeChop : public BasicAbstractGame {
     TreeChop()
         : BasicAbstractGame(NAME) {
         timeout = 6400; // number of steps to timeout after
-
-        main_width = 20;
-        main_height = 20;
-
+        main_width = 10;
+        main_height = 10;
         mixrate = .5;
         maxspeed = .5;
         has_useful_vel_info = false;
@@ -58,11 +56,6 @@ class TreeChop : public BasicAbstractGame {
             obj->will_erase = true;
             trees_chopped += 1;
       }
-
-         // will need another condition at some point to end the game
-         // with step_data.done = true;
-         // if reached a certain amount of reward and trees chopped
-
     }
 
     bool is_free(int idx) {
@@ -82,9 +75,6 @@ class TreeChop : public BasicAbstractGame {
         } else if (dist_diff == HardMode) {
             main_width = 20;
             main_height = 20;
-        } else if (dist_diff == MemoryMode) {
-            main_width = 35;
-            main_height = 35;
         }
     }
 
@@ -152,13 +142,11 @@ class TreeChop : public BasicAbstractGame {
         // probability of a new tree spawning at a random empty location
         double respawn_prob = std::max(R_MIN, R_MAX * std::log(1.0 + trees_count) / std::log(1.0 + MAX_TREES));
 
-        // respawn a new tree
-        // per episode step
-        // place a new tree with respawn probability
-        // if there are fewer than the max trees
-        // sample 1 from the grid where == SPACE only
-        // then place a tree
-        if (trees_count < MAX_TREES) {
+        // if there are fewer than the max trees in this step
+        // (the second condition is just to allow game step recovery)
+        // then sample the grid that == SPACE only
+        // and spawn a new tree with respawn probability
+        if ((trees_count < MAX_TREES) && (rand_gen.randn(5) == 1)) {
 
             if (rand_gen.rand01() < respawn_prob) {
 
@@ -175,9 +163,7 @@ class TreeChop : public BasicAbstractGame {
             set_obj(random_idx, TREE);
 
             }
-
         }
-
     }
 
     void serialize(WriteBuffer *b) override {
