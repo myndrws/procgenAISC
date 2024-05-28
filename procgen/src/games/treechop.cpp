@@ -12,12 +12,9 @@ const double R_MIN = 0.000001;
 const double R_MAX = 0.3;
 const double N_MAX = 10;
 
-// TODO
-// checkout the rewarding and counting of trees remaining
-// tree appearance during the game
-
+const int TREESTUMP = 1;
 const int TREE = 10;
-const int TREESTUMP = 0;
+
 
 class TreeChop : public BasicAbstractGame {
   public:
@@ -122,17 +119,10 @@ class TreeChop : public BasicAbstractGame {
         if (action_vx < 0)
             agent->is_reflected = true;
 
-        int ix = int(agent->x);
-        int iy = int(agent->y);
-        if (get_obj(ix, iy) == TREE) {
-            set_obj(ix, iy, SPACE);
-            step_data.reward += TREE_REWARD;
-        }
-
         int main_area = main_width * main_height;
-        int trees_count = 0;
 
         // count trees
+        int trees_count = 0;
         for (int idx = 0; idx < main_area; idx++){
             if (get_obj(idx) == TREE) {
                 trees_count++;
@@ -140,15 +130,25 @@ class TreeChop : public BasicAbstractGame {
         }
 
         // probability of a new tree spawning at a random empty location
-        double respawn_prob = std::max(R_MIN, R_MAX * std::log(1.0 + trees_count) / std::log(1.0 + MAX_TREES));
+        double respawn_prob = std::max(R_MIN, R_MAX * (std::log(1.0 + trees_count) / std::log(1.0 + MAX_TREES)));
+
+        // probability of enacting respawn this episode step
+        std::random_device rd;
+        std::mt19937 mt(rd());
+        std::bernoulli_distribution dist(0.2);
+        bool this_step = dist(mt);
 
         // if there are fewer than the max trees in this step
-        // (the second condition is just to allow game step recovery)
+        // (the second condition is just to allow game step recovery -
+        // this is a modification on the original paper)
         // then sample the grid that == SPACE only
         // and spawn a new tree with respawn probability
-        if ((trees_count < MAX_TREES) && (rand_gen.randn(5) == 1)) {
+        if ((trees_count < MAX_TREES) && (this_step)) {
 
-            if (rand_gen.rand01() < respawn_prob) {
+        std::bernoulli_distribution dist(respawn_prob);
+        bool respawn = dist(mt);
+
+            if (respawn) {
 
             // get the free space on the grid
             std::vector<int> free_indexes;
@@ -164,6 +164,23 @@ class TreeChop : public BasicAbstractGame {
 
             }
         }
+
+        // control the agent/tree collision behaviour
+        int ix = int(agent->x);
+        int iy = int(agent->y);
+        if (get_obj(ix, iy) == TREE) {
+            set_obj(ix, iy, SPACE); // set this to TREESTUMP for a modification
+            step_data.reward += TREE_REWARD;
+        }
+
+        // randomly remove treestumps
+        bool remove_stump = dist(mt);
+        for (int idx = 0; idx < main_area; idx++) {
+            if ((get_obj(idx) == TREESTUMP) && (remove_stump)) {
+                set_obj(ix, iy, SPACE);
+            }
+        }
+
     }
 
     void serialize(WriteBuffer *b) override {
