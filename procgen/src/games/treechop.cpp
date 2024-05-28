@@ -11,20 +11,22 @@ const int TREE_REWARD = 1.0;
 // TODO
 // get rid of the jumpi-ness by testing removing the SPACE thing
 // make trees disappear on collision to be replaced by treestumps ideally
+// might be something to do with 'is_free'
 // checkout the rewarding and counting of trees remaining
+// tree appearance during the game
 
 const int TREE = 10;
 const int TREESTUMP = 0;
-const int TREES_CHOPPED = 0;
-
-const int OOB_WALL = 10;
 
 class TreeChop : public BasicAbstractGame {
   public:
     int trees_remaining = 0;
+    int trees_chopped = 0;
 
     TreeChop()
         : BasicAbstractGame(NAME) {
+        timeout = 6000;
+
         main_width = 20;
         main_height = 20;
 
@@ -32,8 +34,6 @@ class TreeChop : public BasicAbstractGame {
         maxspeed = .5;
         has_useful_vel_info = false;
 
-        out_of_bounds_object = OOB_WALL;
-        visibility = 8.0;
     }
 
     void load_background_images() override {
@@ -50,15 +50,14 @@ class TreeChop : public BasicAbstractGame {
         }
     }
 
+    // right now this is never being activated or called - why?
     void handle_agent_collision(const std::shared_ptr<Entity> &obj) override {
         BasicAbstractGame::handle_agent_collision(obj);
 
         if (obj->type == TREE) {
-            if (obj->rx > agent->rx) {
-                step_data.reward += TREE_REWARD;
-                obj->will_erase = true;
-            }
-
+            step_data.reward += TREE_REWARD;
+            obj->will_erase = true;
+            trees_chopped += 1;
       }
 
          // will need another condition at some point to end the game
@@ -69,12 +68,6 @@ class TreeChop : public BasicAbstractGame {
 
     int get_agent_index() {
         return int(agent->y) * main_width + int(agent->x);
-    }
-
-    void set_action_xy(int move_action) override {
-        BasicAbstractGame::set_action_xy(move_action);
-        if (action_vx != 0)
-            action_vy = 0;
     }
 
     void choose_world_dim() override {
@@ -98,14 +91,15 @@ class TreeChop : public BasicAbstractGame {
         agent->rx = .5;
         agent->ry = .5;
 
+        trees_chopped = 0;
+
         int main_area = main_height * main_width;
 
         options.center_agent = options.distribution_mode == MemoryMode;
         grid_step = true;
 
-        float tree_pct = 12 / 400.0f;
-
-        int num_trees = (int)(tree_pct * grid_size);
+        // will need to set properly later
+        int num_trees = 10;
 
         std::vector<int> obj_idxs = rand_gen.simple_choose(main_area, num_trees + 1);
 
@@ -124,8 +118,10 @@ class TreeChop : public BasicAbstractGame {
 
     }
 
-    bool is_free(int idx) {
-        return get_obj(idx) == SPACE && (get_agent_index() != idx);
+    void set_action_xy(int move_action) override {
+        BasicAbstractGame::set_action_xy(move_action);
+        if (action_vx != 0)
+            action_vy = 0;
     }
 
     void game_step() override {
@@ -136,10 +132,10 @@ class TreeChop : public BasicAbstractGame {
         if (action_vx < 0)
             agent->is_reflected = true;
 
-        int agent_obj = get_obj(int(agent->x), int(agent->y));
-
-        if (agent_obj == TREE) {
-            set_obj(int(agent->x), int(agent->y), SPACE);
+        int ix = int(agent->x);
+        int iy = int(agent->y);
+        if (get_obj(ix, iy) == TREE) {
+            set_obj(ix, iy, SPACE);
             step_data.reward += TREE_REWARD;
         }
 
@@ -147,18 +143,9 @@ class TreeChop : public BasicAbstractGame {
 
         int tree_count = 0;
 
-        for (int idx = 0; idx < main_area; idx++) {
-            int obj = get_obj(idx);
-            int obj_x = idx % main_width;
-            int agent_idx = (agent->y - .5) * main_width + (agent->x - .5);
-            if (obj == TREE) {
-                tree_count++;
-            }
-
         trees_remaining = tree_count;
 
         }
-    }
 
     void serialize(WriteBuffer *b) override {
         BasicAbstractGame::serialize(b);
