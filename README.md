@@ -19,6 +19,13 @@ current and maximum number of trees. In the experiment shown in Figure 3 we set 
 
 I have also currently included a 'recovery period' where the trees do not respawn immediately; if this is absent, trees respawn at a rate faster than which the agent can get to them to chop them down. As an extension, the game may also be modified to include treestumps as a non-rewarding distraction.
 
+## Running
+
+You will need the requirements specified in the forked repos to install procgen. Then, you will be able to run TreeChop with the following:
+
+`python -m procgen.interactive --env-name treechop --distribution-mode easy
+`
+
 ## Demo of the tree gridworld TreeChop
 
 https://github.com/myndrws/procgenAISC/assets/24572054/05c8c88d-bc78-4e8d-96d6-52d785493d81
