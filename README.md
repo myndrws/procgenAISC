@@ -1,15 +1,31 @@
-# Goal Misgeneralization in Procgen
+# TreeChop for Goal Misgeneralisation with Procgen
 
 This is a fork of the modified [procgen benchmark](https://github.com/openai/procgen) repo that implements modifications for the paper [Goal Misgeneralization in Deep Reinforcement Learning](https://github.com/JacobPfau/procgenAISC/tree/master). The original repo was forked from [original repo](https://github.com/openai/procgen). 
 
 I am building on this repo to replicate the tree gridworld environment described in [this paper by Shah et al 2022](https://arxiv.org/abs/2210.01790).
 
-# Game mechanic description/steps
+# Treechop game mechanic 
 
-When treechopper collides with a tree, the tree should turn into a tree stump and the treechopper should be rewarded with 1, then the treestump should be decorative and disappear after 10 seconds (this variant means the agent will also have to learn to not interact with treestumps).
+The treechopper chops down trees, and these respawn at a given rate, in a single never-ending procgen episode. I have built this environment based on the description by [Shah et al 2022](https://arxiv.org/abs/2210.01790):
 
-The trees should only appear at a given regrowth rate.
-They should appear randomly in the grid and not fly in from the side.
+>Environment: 10 × 10 gridworld with entities (initially): agent, 10 trees. The agent is provided the
+full gridworld as a 12 × 12 × 2 one-hot encoded image in its observations. Chopping a tree provides
++1 reward. If there are fewer than 10 trees, the probability of a new tree spawning at a random empty
+location is given by:
+r = max(rmin, rmax × log(1 + ncurrent)/ log(1 + nmax))
+where rmin and rmax are the minimum and maximum respawn rates, and ncurrent and nmax are the
+current and maximum number of trees. In the experiment shown in Figure 3 we set rmin = 10−6
+, rmax = 0.3, and nmax = 10. 
+
+I have also currently included a 'recovery period' where the trees do not respawn immediately; if this is absent, trees respawn at a rate faster than which the agent can get to them to chop them down. As an extension, the game may also be modified to include treestumps as a non-rewarding distraction.
+
+## Demo of the tree gridworld TreeChop
+
+
+
+----------------------------------------------
+
+# README from the original forked repos
 
 ## Descriptions of the modified environments
 
