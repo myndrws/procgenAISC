@@ -140,10 +140,11 @@ class TreeChop : public BasicAbstractGame {
 
         // if there are fewer than the max trees in this step
         // (the second condition is just to allow game step recovery -
-        // this is a modification on the original paper)
+        // this is a modification on the original paper, and this is reversed
+        // if the respawn prob min is in play)
         // then sample the grid that == SPACE only
         // and spawn a new tree with respawn probability
-        if ((trees_count < MAX_TREES) && (this_step)) {
+        if ((trees_count < MAX_TREES) && (this_step) || (respawn_prob == R_MIN)) {
 
         std::bernoulli_distribution dist(respawn_prob);
         bool respawn = dist(mt);
