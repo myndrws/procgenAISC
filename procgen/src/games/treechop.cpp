@@ -22,7 +22,7 @@ class TreeChop : public BasicAbstractGame {
 
     TreeChop()
         : BasicAbstractGame(NAME) {
-        timeout = 6400; // number of steps to timeout after
+        timeout = 20000000; // number of steps to timeout after
         main_width = 10;
         main_height = 10;
         mixrate = .5;
