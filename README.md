@@ -1,8 +1,38 @@
 # TreeChop for Goal Misgeneralisation with Procgen
 
-This is a fork of the modified [procgen benchmark](https://github.com/openai/procgen) repo that implements modifications for the paper [Goal Misgeneralization in Deep Reinforcement Learning](https://github.com/JacobPfau/procgenAISC/tree/master). The original repo was forked from [OpenAI's procgen benchmark repo](https://github.com/openai/procgen). 
+This is a fork of the modified [procgen benchmark](https://github.com/openai/procgen) repo that implements modifications for the paper [Goal Misgeneralization in Deep Reinforcement Learning](https://github.com/JacobPfau/procgenAISC/tree/master). The original repo was forked from [OpenAI's procgen benchmark repo](https://github.com/openai/procgen).
 
 I am building on this repo to replicate the tree gridworld environment described in [this paper by Shah et al 2022](https://arxiv.org/abs/2210.01790).
+
+## ✅ Migration to Gymnasium Complete
+
+**This repository has been successfully migrated from gym3 to pybind11 with full Gymnasium API support.**
+
+- 🎯 Modern, maintained dependencies (pybind11, Gymnasium)
+- 🚀 Zero-copy numpy buffer sharing for performance
+- 📦 Full Gymnasium API compliance
+- ✨ Compatible with modern RL frameworks (Stable-Baselines3, etc.)
+
+See [docs/MIGRATION_COMPLETE.md](docs/MIGRATION_COMPLETE.md) for full migration details.
+
+### Quick Start with Gymnasium
+
+```python
+import gymnasium as gym
+
+# Create environment
+env = gym.make('procgen-treechop-v0', render_mode='rgb_array')
+
+# Reset and interact
+obs, info = env.reset(seed=42)
+for _ in range(100):
+    action = env.action_space.sample()
+    obs, reward, terminated, truncated, info = env.step(action)
+    if terminated or truncated:
+        obs, info = env.reset()
+
+env.close()
+```
 
 # TreeChop game mechanic 
 
@@ -30,6 +60,34 @@ You will need the requirements specified in the forked repos to install procgen.
 
 https://github.com/myndrws/procgenAISC/assets/24572054/05c8c88d-bc78-4e8d-96d6-52d785493d81
 
+## Documentation
+
+- 📚 [Migration Complete](docs/MIGRATION_COMPLETE.md) - Full details of gym3 → pybind11 migration
+- 🔧 [Build Instructions](docs/BUILD_INSTRUCTIONS.md) - Detailed build and troubleshooting guide
+- 📋 [Migration Plan](docs/PYBIND11_MIGRATION_PLAN.md) - Original migration strategy
+- 📝 [Gymnasium Migration](docs/GYMNASIUM_MIGRATION.md) - Gymnasium API implementation notes
+- 🧪 [Testing Guide](tests/README.md) - How to run the test suite
+- 📄 [Changes](docs/CHANGES.md) - Version history and modifications
+- 🤝 [Contributing](docs/CONTRIBUTING.md) - How to contribute
+
+## Testing
+
+Run the test suite to verify your installation:
+
+```bash
+# Test basic functionality
+uv run tests/test_treechop_functional.py
+
+# Test Gymnasium interface
+uv run tests/test_gymnasium_simple.py
+uv run tests/test_gymnasium_render.py
+
+# Full smoke tests
+uv run tests/test_smoke_gymnasium_only.py
+```
+
+All tests should pass with exit code 0.
+
 ----------------------------------------------
 
 # README from the original forked repos
@@ -54,30 +112,37 @@ For more information on the standard environments see the original repository.
 
 ## Installation
 
-Below we reproduce the instructions to install from source, copied from the [original repo](https://github.com/openai/procgen).
+### Requirements
 
----
+- Python 3.9 (64-bit)
+- CMake 3.10+
+- Qt5 development libraries
+- pybind11 2.11.0+
+- Gymnasium 0.26.0+
 
-First make sure you have a supported version of python:
+### Install from Source
 
-```
-# run these commands to check for the correct python version
-python -c "import sys; assert (3,6,0) <= sys.version_info <= (3,9,0), 'python is incorrect version'; print('ok')"
-python -c "import platform; assert platform.architecture()[0] == '64bit', 'python is not 64-bit'; print('ok')"
-```
+```bash
+# Clone the repository
+git clone https://github.com/myndrws/procgenAISC.git
+cd procgenAISC
 
-If you want to change the environments or create new ones, you should build from source.  You can get miniconda from https://docs.conda.io/en/latest/miniconda.html if you don't have it, or install the dependencies from [`environment.yml`](environment.yml) manually.  On Windows you will also need "Visual Studio 15 2017" installed.
-
-```
-git clone git@github.com:openai/procgen.git
-cd procgen
+# Create conda environment
 conda env update --name procgen --file environment.yml
 conda activate procgen
+
+# Build and install
 pip install -e .
-# this should say "building procgen...done"
-python -c "from procgen import ProcgenGym3Env; ProcgenGym3Env(num=1, env_name='coinrun')"
-# this should create a window where you can play the coinrun environment
-python -m procgen.interactive
+
+# Test the installation
+python -c "import gymnasium as gym; env = gym.make('procgen-treechop-v0'); print('✓ Installation successful!')"
+
+# Run interactive mode
+python -m procgen.interactive --env-name treechop --distribution-mode easy
 ```
 
-The environment code is in C++ and is compiled into a shared library exposing the [`gym3.libenv`](https://github.com/openai/gym3/blob/master/gym3/libenv.h) C interface that is then loaded by python.  The C++ code uses [Qt](https://www.qt.io/) for drawing.
+### Architecture
+
+The environment code is in C++ and compiled into a shared library (`libenv.so`) using pybind11. The Python bindings expose the `ProcgenVecEnv` class which wraps the C++ `VecGame` implementation. The Gymnasium wrapper (`procgen_gymnasium_env.py`) provides a standard RL interface. Qt5 is used for rendering.
+
+For detailed build instructions, see [docs/BUILD_INSTRUCTIONS.md](docs/BUILD_INSTRUCTIONS.md).

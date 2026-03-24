@@ -4,7 +4,8 @@ project(codegen)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+# Note: We don't set CMAKE_CXX_VISIBILITY_PRESET hidden because we need to export
+# symbols from libenv.so for the pybind11 module to use
 
 option(PROCGEN_PACKAGE "Set if the python package is being built" OFF)
 
@@ -39,8 +40,12 @@ endif()
 # include qt5
 find_package(Qt5 COMPONENTS Gui REQUIRED)
 
-add_library(env
-  SHARED
+# Find pybind11 for Python bindings
+find_package(pybind11 CONFIG REQUIRED)
+
+# Build game engine as shared library
+# Note: We use shared library instead of static to ensure game registration code is included
+add_library(env SHARED
   src/assetgen.cpp
   src/basic-abstract-game.cpp
   src/cpp-utils.cpp
@@ -82,7 +87,22 @@ add_library(env
   src/vecoptions.cpp
 )
 
-# find libenv.h header
-target_include_directories(env PUBLIC ${LIBENV_DIR})
+# Include local libenv.h header (no longer using gym3)
+target_include_directories(env PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/data/libenv)
 
 target_link_libraries(env Qt5::Gui)
+
+# pybind11 Python extension module
+pybind11_add_module(procgen_bindings src/procgen_bindings.cpp)
+target_link_libraries(procgen_bindings PRIVATE env)
+target_include_directories(procgen_bindings PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/src
+  ${CMAKE_CURRENT_SOURCE_DIR}/data/libenv
+)
+
+# Set RPATH so the module can find libenv.so at runtime
+set_target_properties(procgen_bindings PROPERTIES
+  BUILD_WITH_INSTALL_RPATH TRUE
+  INSTALL_RPATH "$ORIGIN"
+  INSTALL_RPATH_USE_LINK_PATH TRUE
+)

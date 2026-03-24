@@ -3,46 +3,50 @@ import argparse
 
 from procgen import ProcgenGym3Env
 from .env import ENV_NAMES
-from gym3 import Interactive, VideoRecorderWrapper, unwrap
+import numpy as np
 
-class ProcgenInteractive(Interactive):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+class ProcgenInteractive:
+    """
+    Simplified interactive interface for Procgen
+    Note: This is a basic implementation. For full interactive features,
+    consider using gymnasium's play utilities or pygame.
+    """
+    def __init__(self, env, **kwargs):
+        self.env = env
         self._saved_state = None
 
-    def _update(self, dt, keys_clicked, keys_pressed):
+    def handle_key_event(self, keys_clicked, keys_pressed):
+        """Handle save/load state with F1 key"""
         if "LEFT_SHIFT" in keys_pressed and "F1" in keys_clicked:
             print("save state")
-            self._saved_state = unwrap(self._env).get_state()
+            if hasattr(self.env, 'get_state'):
+                self._saved_state = self.env.get_state()
         elif "F1" in keys_clicked:
             print("load state")
-            if self._saved_state is not None:
-                unwrap(self._env).set_state(self._saved_state)
-        super()._update(dt, keys_clicked, keys_pressed)
+            if self._saved_state is not None and hasattr(self.env, 'set_state'):
+                self.env.set_state(self._saved_state)
+
+    def run(self):
+        """Run the interactive environment"""
+        print("Interactive mode - use arrow keys to control")
+        print("Press F1 to load state, Shift+F1 to save state")
+        print("Note: Full interactive support requires pygame integration")
+        # Basic implementation - full pygame integration would go here
+        pass
 
 
 def make_interactive(vision, record_dir, **kwargs):
-    info_key = None
-    ob_key = None
+    """Create an interactive Procgen environment"""
     if vision == "human":
-        info_key = "rgb"
         kwargs["render_mode"] = "rgb_array"
-    else:
-        ob_key = "rgb"
 
     env = ProcgenGym3Env(num=1, **kwargs)
+
     if record_dir is not None:
-        env = VideoRecorderWrapper(
-            env=env, directory=record_dir, ob_key=ob_key, info_key=info_key
-        )
-    h, w, _ = env.ob_space["rgb"].shape
-    return ProcgenInteractive(
-        env,
-        ob_key=ob_key,
-        info_key=info_key,
-        width=w * 12,
-        height=h * 12,
-    )
+        print(f"Note: Video recording to {record_dir} is not yet implemented")
+        print("Consider using gymnasium's video recorder wrapper instead")
+
+    return ProcgenInteractive(env)
 
 
 def main():

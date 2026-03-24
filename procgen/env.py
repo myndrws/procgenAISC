@@ -1,11 +1,39 @@
+"""
+DEPRECATED: This module uses the legacy gym3-based implementation.
+
+The gym3 library is unmaintained (last updated 2020). This implementation
+is kept for backward compatibility only.
+
+NEW USERS: Please use the new pybind11-based implementation:
+    from procgen.procgen_gymnasium_env import ProcgenEnv
+    # Or use gymnasium.make():
+    import gymnasium as gym
+    env = gym.make('procgen-coinrun-v0')
+
+The new implementation provides:
+- Full Gymnasium API compliance
+- Better performance (no CFFI overhead)
+- Active maintenance
+- Cleaner architecture
+"""
+
 import os
 import random
+import warnings
 from typing import Sequence, Optional, List
 
-import gym3
 from gym3.libenv import CEnv
 import numpy as np
 from .build import build
+
+# Emit deprecation warning
+warnings.warn(
+    "The gym3-based implementation in procgen.env is deprecated. "
+    "Please migrate to procgen.procgen_gymnasium_env.ProcgenEnv or use gymnasium.make(). "
+    "See https://gymnasium.farama.org/ for migration guide.",
+    DeprecationWarning,
+    stacklevel=2
+)
 
 try:
     from imagecorruptions import corrupt
@@ -298,6 +326,7 @@ class ProcgenGym3Env(BaseProcgenEnv):
 
 def ProcgenEnv(num_envs, env_name, **kwargs):
     """
-    Baselines VecEnv interface for Procgen
+    Procgen environment interface (returns ProcgenGym3Env directly)
+    Note: For gymnasium compatibility, use gymnasium.make() or gymnasium.make_vec() instead
     """
-    return gym3.ToBaselinesVecEnv(ProcgenGym3Env(num=num_envs, env_name=env_name, **kwargs))
+    return ProcgenGym3Env(num=num_envs, env_name=env_name, **kwargs)

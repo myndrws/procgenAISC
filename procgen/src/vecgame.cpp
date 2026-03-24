@@ -142,14 +142,21 @@ static void stepping_worker(std::mutex &stepping_thread_mutex,
 }
 
 void global_init(int rand_seed, std::string resource_root) {
+    std::cout << "[DEBUG global_init] Starting, resource_root=" << resource_root << std::endl;
     global_resource_root = resource_root;
 
     try {
+        std::cout << "[DEBUG global_init] Calling images_load..." << std::endl;
         images_load();
+        std::cout << "[DEBUG global_init] images_load completed" << std::endl;
+        std::cout << "[DEBUG global_init] Calling coinrun_old_init..." << std::endl;
         coinrun_old_init(rand_seed);
+        std::cout << "[DEBUG global_init] coinrun_old_init completed" << std::endl;
     } catch (const std::exception &e) {
+        std::cout << "[DEBUG global_init] Exception caught: " << e.what() << std::endl;
         fatal("failed to load images %s\n", e.what());
     }
+    std::cout << "[DEBUG global_init] Complete" << std::endl;
 }
 
 // we want system independent hashing. std::hash doesn't give this.
@@ -181,19 +188,32 @@ VecGame::VecGame(int _nenvs, VecOptions opts) {
     // int random_percent = 100;
     std::string resource_root;
 
+    std::cout << "[DEBUG VecGame] Parsing options..." << std::endl;
     opts.consume_string("env_name", &env_name);
+    std::cout << "[DEBUG VecGame] env_name=" << env_name << std::endl;
     opts.consume_int("num_levels", &num_levels);
+    std::cout << "[DEBUG VecGame] num_levels=" << num_levels << std::endl;
     opts.consume_int("start_level", &start_level);
+    std::cout << "[DEBUG VecGame] start_level=" << start_level << std::endl;
     opts.consume_int("num_actions", &num_actions);
+    std::cout << "[DEBUG VecGame] num_actions=" << num_actions << std::endl;
     opts.consume_int("rand_seed", &rand_seed);
+    std::cout << "[DEBUG VecGame] rand_seed=" << rand_seed << std::endl;
     opts.consume_int("num_threads", &num_threads);
+    std::cout << "[DEBUG VecGame] num_threads=" << num_threads << std::endl;
     opts.consume_string("resource_root", &resource_root);
+    std::cout << "[DEBUG VecGame] resource_root=" << resource_root << std::endl;
     opts.consume_bool("render_human", &render_human);
+    std::cout << "[DEBUG VecGame] render_human=" << render_human << std::endl;
     // opts.consume_int("random_percent", &random_percent);
 
+    std::cout << "[DEBUG VecGame] All options parsed successfully!" << std::endl;
+    std::cout << "[DEBUG VecGame] Calling global_init..." << std::endl;
     std::call_once(global_init_flag, global_init, rand_seed,
                    resource_root);
+    std::cout << "[DEBUG VecGame] global_init completed" << std::endl;
 
+    std::cout << "[DEBUG VecGame] Creating " << num_threads << " worker threads..." << std::endl;
     fassert(num_threads >= 0);
     threads.resize(num_threads);
     for (int t = 0; t < num_threads; t++) {
@@ -205,11 +225,14 @@ VecGame::VecGame(int _nenvs, VecOptions opts) {
             std::ref(pending_game_complete),
             std::ref(time_to_die));
     }
+    std::cout << "[DEBUG VecGame] Worker threads created" << std::endl;
 
+    std::cout << "[DEBUG VecGame] Validating parameters..." << std::endl;
     fassert(env_name != "");
     fassert(num_actions > 0);
     fassert(num_levels >= 0);
     fassert(start_level >= 0);
+    std::cout << "[DEBUG VecGame] Parameters validated" << std::endl;
 
     {
         struct libenv_tensortype s;
@@ -355,6 +378,7 @@ VecGame::VecGame(int _nenvs, VecOptions opts) {
 	}
 
 
+    std::cout << "[DEBUG VecGame] Setting up level seeds..." << std::endl;
     int level_seed_low = 0;
     int level_seed_high = 0;
 
@@ -365,8 +389,10 @@ VecGame::VecGame(int _nenvs, VecOptions opts) {
         level_seed_low = start_level;
         level_seed_high = start_level + num_levels;
     }
+    std::cout << "[DEBUG VecGame] Level seeds: low=" << level_seed_low << ", high=" << level_seed_high << std::endl;
 
     std::vector<std::string> env_names = split(env_name, ",");
+    std::cout << "[DEBUG VecGame] Creating " << env_names.size() << " game type(s)" << std::endl;
 
     num_joint_games = (int)(env_names.size());
 
@@ -380,16 +406,38 @@ VecGame::VecGame(int _nenvs, VecOptions opts) {
         info_name_to_offset[info_types[i].name] = i;
     }
 
+    std::cout << "[DEBUG VecGame] Creating " << num_envs << " game instance(s)..." << std::endl;
     for (int n = 0; n < num_envs; n++) {
         auto name = env_names[n % num_joint_games];
+        std::cout << "[DEBUG VecGame]   Creating game " << n << ": " << name << std::endl;
+        std::cout.flush();
+
+        // Check if registry is initialized
+        if (globalGameRegistry == nullptr) {
+            std::cout << "[DEBUG VecGame]   ERROR: globalGameRegistry is null!" << std::endl;
+            fatal("globalGameRegistry is null - games not registered\n");
+        }
+        std::cout << "[DEBUG VecGame]   Registry exists, checking for game..." << std::endl;
+        std::cout.flush();
+
+        // Check if game exists in registry
+        if (globalGameRegistry->find(name) == globalGameRegistry->end()) {
+            std::cout << "[DEBUG VecGame]   ERROR: Game '" << name << "' not found in registry!" << std::endl;
+            fatal("Game not found in registry: %s\n", name.c_str());
+        }
+        std::cout << "[DEBUG VecGame]   Game found in registry, calling factory..." << std::endl;
+        std::cout.flush();
 
         games[n] = globalGameRegistry->at(name)();
+        std::cout << "[DEBUG VecGame]   Factory returned, checking game..." << std::endl;
+        std::cout.flush();
         fassert(games[n]->game_name == name);
         games[n]->level_seed_rand_gen.seed(game_level_seed_gen.randint());
         games[n]->level_seed_high = level_seed_high;
         games[n]->level_seed_low = level_seed_low;
         games[n]->game_n = n;
         games[n]->is_waiting_for_step = false;
+        std::cout << "[DEBUG VecGame]   Parsing game options..." << std::endl;
         games[n]->parse_options(name, opts);
         games[n]->info_name_to_offset = info_name_to_offset;
 
@@ -400,8 +448,11 @@ VecGame::VecGame(int _nenvs, VecOptions opts) {
             games[n]->fixed_asset_seed = int(hashed);
         }
 
+        std::cout << "[DEBUG VecGame]   Calling game_init..." << std::endl;
         games[n]->game_init();
+        std::cout << "[DEBUG VecGame]   Game " << n << " initialized successfully!" << std::endl;
     }
+    std::cout << "[DEBUG VecGame] All games created successfully!" << std::endl;
 }
 
 void VecGame::set_buffers(const std::vector<std::vector<void *>> &ac, const std::vector<std::vector<void *>> &ob, const std::vector<std::vector<void *>> &info, float *rew, uint8_t *first) {
@@ -475,16 +526,22 @@ void VecGame::act() {
 }
 
 VecGame::~VecGame() {
+    std::cout << "[DEBUG ~VecGame] Destructor starting..." << std::endl;
+    std::cout << "[DEBUG ~VecGame] Waiting for stepping threads..." << std::endl;
     wait_for_stepping_threads();
+    std::cout << "[DEBUG ~VecGame] Stepping threads done, acquiring lock..." << std::endl;
     {
         std::unique_lock<std::mutex> lock(stepping_thread_mutex);
         time_to_die = true;
     }
+    std::cout << "[DEBUG ~VecGame] Notifying pending_games_added..." << std::endl;
     pending_games_added.notify_all();
 
+    std::cout << "[DEBUG ~VecGame] Joining " << threads.size() << " threads..." << std::endl;
     for (auto &t : threads) {
         t.join();
     }
+    std::cout << "[DEBUG ~VecGame] All threads joined, destructor complete" << std::endl;
 }
 
 void VecGame::wait_for_stepping_threads() {
