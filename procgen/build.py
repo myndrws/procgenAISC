@@ -8,7 +8,7 @@ import sys
 import platform
 import multiprocessing as mp
 
-import gym3
+import gym3.libenv as libenv
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -74,7 +74,7 @@ def _attempt_configure(build_type, package):
         "-G",
         generator,
         "-DCMAKE_PREFIX_PATH=" + ";".join(cmake_prefix_paths),
-        f"-DLIBENV_DIR={gym3.libenv.get_header_dir()}",
+        f"-DLIBENV_DIR={libenv.get_header_dir()}",
         "../..",
     ]
     if package:
@@ -100,39 +100,48 @@ def build(package=False, debug=False):
     with chdir(build_dir), global_build_lock:
         # check if we have built yet in this process
         if build_type not in global_builds:
-            if package:
-                # avoid the filelock dependency when building from setup.py
-                lock_ctx = nullcontext()
+            # Check if library already exists to avoid unnecessary rebuilds
+            lib_dir_check = os.path.join(build_dir, build_type)
+            lib_names = ["libenv.so", "libenv.dylib", "env.dll"]
+            library_exists = any(os.path.exists(os.path.join(lib_dir_check, name)) for name in lib_names)
+
+            if library_exists:
+                # Library already built, just mark as done
+                global_builds.add(build_type)
             else:
-                # prevent multiple processes from trying to build at the same time
-                import filelock
+                if package:
+                    # avoid the filelock dependency when building from setup.py
+                    lock_ctx = nullcontext()
+                else:
+                    # prevent multiple processes from trying to build at the same time
+                    import filelock
 
-                lock_ctx = filelock.FileLock(".build-lock")
-            with lock_ctx:
-                sys.stdout.write("building procgen...")
-                sys.stdout.flush()
-                try:
-                    os.makedirs(build_type, exist_ok=True)
-                    with chdir(build_type):
-                        _attempt_configure(build_type, package)
-                except RunFailure:
-                    # cmake can get into a weird state, so nuke the build directory and retry once
-                    sys.stdout.write("retrying configure due to failure...")
+                    lock_ctx = filelock.FileLock(".build-lock")
+                with lock_ctx:
+                    sys.stdout.write("building procgen...")
                     sys.stdout.flush()
-                    shutil.rmtree(build_type)
-                    os.makedirs(build_type, exist_ok=True)
+                    try:
+                        os.makedirs(build_type, exist_ok=True)
+                        with chdir(build_type):
+                            _attempt_configure(build_type, package)
+                    except RunFailure:
+                        # cmake can get into a weird state, so nuke the build directory and retry once
+                        sys.stdout.write("retrying configure due to failure...")
+                        sys.stdout.flush()
+                        shutil.rmtree(build_type)
+                        os.makedirs(build_type, exist_ok=True)
+                        with chdir(build_type):
+                            _attempt_configure(build_type, package)
+
+                    if "MAKEFLAGS" not in os.environ:
+                        os.environ["MAKEFLAGS"] = f"-j{mp.cpu_count()}"
+
                     with chdir(build_type):
-                        _attempt_configure(build_type, package)
+                        build_cmd = ["cmake", "--build", ".", "--config", build_type]
+                        check(run(build_cmd), verbose=package)
+                    print("done")
 
-                if "MAKEFLAGS" not in os.environ:
-                    os.environ["MAKEFLAGS"] = f"-j{mp.cpu_count()}"
-
-                with chdir(build_type):
-                    build_cmd = ["cmake", "--build", ".", "--config", build_type]
-                    check(run(build_cmd), verbose=package)
-                print("done")
-
-            global_builds.add(build_type)
+                global_builds.add(build_type)
 
     lib_dir = os.path.join(build_dir, build_type)
     if platform.system() == "Windows":

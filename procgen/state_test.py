@@ -2,7 +2,6 @@ import numpy as np
 import pytest
 from procgen import ProcgenGym3Env
 from .env import ENV_NAMES
-import gym3
 import multiprocessing as mp
 
 
@@ -72,8 +71,9 @@ def run_state_test(env_name):
     env_kwargs = dict(num=2, env_name=env_name, rand_seed=0)
     env = ProcgenGym3Env(**env_kwargs)
     rng = np.random.RandomState(0)
+    # Sample random actions directly instead of using gym3.types_np.sample
     actions = [
-        gym3.types_np.sample(env.ac_space, bshape=(env.num,), rng=rng)
+        rng.randint(0, 15, size=(env.num,), dtype=np.int32)
         for _ in range(NUM_STEPS)
     ]
     ref_rollouts = run_in_subproc(

@@ -2,7 +2,6 @@ import os
 import random
 from typing import Sequence, Optional, List
 
-import gym3
 from gym3.libenv import CEnv
 import numpy as np
 from .build import build
@@ -298,6 +297,7 @@ class ProcgenGym3Env(BaseProcgenEnv):
 
 def ProcgenEnv(num_envs, env_name, **kwargs):
     """
-    Baselines VecEnv interface for Procgen
+    Procgen environment interface (returns ProcgenGym3Env directly)
+    Note: For gymnasium compatibility, use gymnasium.make() or gymnasium.make_vec() instead
     """
-    return gym3.ToBaselinesVecEnv(ProcgenGym3Env(num=num_envs, env_name=env_name, **kwargs))
+    return ProcgenGym3Env(num=num_envs, env_name=env_name, **kwargs)
