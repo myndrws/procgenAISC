@@ -3,13 +3,12 @@ channels:
 
 dependencies:
   - python>=3.7,<3.10
-  # https://www.anaconda.com/utilizing-the-new-compilers-in-anaconda-distribution-5/
   - c-compiler=1.0.4
   - cmake=3.14.0
-  - qt=5.12.5  # conda-forge does not have 5.13.2 available
+  - qt=5.12.5
   - pip
   - pip:
-    - gym3>=0.3.3,<1.0.0
     - numpy>=1.17.0,<2.0.0
     - gymnasium>=0.29.0
+    - pybind11>=2.11.0
     - filelock>=3.0.0,<4.0.0

@@ -8,9 +8,12 @@ import sys
 import platform
 import multiprocessing as mp
 
-import gym3.libenv as libenv
-
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def get_header_dir():
+    """Get the directory containing libenv.h header"""
+    return os.path.join(SCRIPT_DIR, "data", "libenv")
 
 
 global_build_lock = threading.Lock()
@@ -74,7 +77,6 @@ def _attempt_configure(build_type, package):
         "-G",
         generator,
         "-DCMAKE_PREFIX_PATH=" + ";".join(cmake_prefix_paths),
-        f"-DLIBENV_DIR={libenv.get_header_dir()}",
         "../..",
     ]
     if package:

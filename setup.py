@@ -76,12 +76,12 @@ setup(
     packages=find_packages(),
     version=version,
     setup_requires=[
-        "gym3>=0.3.3,<1.0.0",
+        "pybind11>=2.11.0",
     ],
     install_requires=[
         "numpy>=1.17.0,<2.0.0",
         "gymnasium>=0.29.0",
-        "gym3>=0.3.3,<1.0.0",
+        "pybind11>=2.11.0",
         "filelock>=3.0.0,<4.0.0",
     ],
     python_requires=">=3.6.0",
