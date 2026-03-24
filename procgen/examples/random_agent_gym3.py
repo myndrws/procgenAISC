@@ -1,30 +1,22 @@
 """
-Example random agent script demonstrating procgen with direct ProcgenGym3Env usage.
-Note: This uses the internal API. For standard gymnasium usage, see random_agent_gym.py
+Example random agent script using the gymnasium API to demonstrate that procgen works
 """
 
-import numpy as np
-from procgen import ProcgenGym3Env
+import procgen  # Import first to register environments
+import gymnasium as gym
 
-env = ProcgenGym3Env(num=1, env_name="treechop", distribution_mode="easy", render_mode="rgb_array")
-
+env = gym.make('procgen-treechop-v0', distribution_mode="easy")
+obs, info = env.reset()
 step = 0
 total_reward = 0
 
-# Initial observation
-rew, obs, first = env.observe()
-
-while True:
-    # Sample random action
-    action = np.random.randint(0, 15, size=(env.num,), dtype=np.int32)
-    env.act(action)
-    rew, obs, first = env.observe()
-
-    total_reward += rew[0]
-    print(f"step {step} reward {rew[0]:.2f} first {first[0]}")
-
-    if step > 0 and first[0]:
-        break
+while step < 1000:
+    obs, rew, terminated, truncated, info = env.step(env.action_space.sample())
+    done = terminated or truncated
+    total_reward += rew
+    print(f"step {step} reward {rew:.2f} done {done}")
     step += 1
+    if done:
+        break
 
 print(f"total reward {total_reward:.2f}")
